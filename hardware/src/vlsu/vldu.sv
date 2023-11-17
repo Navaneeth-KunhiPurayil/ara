@@ -259,6 +259,12 @@ module vldu import ara_pkg::*; import rvv_pkg::*; #(
         r_pnt_d   = r_pnt_q + valid_bytes;
         vrf_pnt_d = vrf_pnt_q + valid_bytes;
 
+`ifdef BYPASS_LD_ST
+        for (int lane = 0; lane < NrLanes; lane++) begin
+          result_queue_d[result_queue_write_pnt_q][lane].wdata = 0;
+          result_queue_d[result_queue_write_pnt_q][lane].be = 0;
+        end
+`else
         // Copy data from the R channel into the result queue
         for (int axi_byte = 0; axi_byte < AxiDataWidth/8; axi_byte++) begin
           // Is this byte a valid byte in the R beat?
@@ -282,6 +288,7 @@ module vldu import ara_pkg::*; import rvv_pkg::*; #(
             end
           end
         end
+`endif
 
         // Initialize id and addr fields of the result queue requests
         for (int lane = 0; lane < NrLanes; lane++) begin

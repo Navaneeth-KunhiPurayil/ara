@@ -74,6 +74,11 @@ ifeq ($(vcd_dump), 1)
   bender_defs += --define VCD_DUMP=1 --define VCD_PATH=$(vcd_path)
 endif
 
+# To bypass the load unit
+ifeq ($(bypass_ld_st), 1)
+	bender_defs += --define BYPASS_LD_ST=1
+endif
+
 # Check if the specified QuestaSim version exists
 ifeq (, $(shell which $(questa_cmd)))
   # Spaces are needed for indentation here!

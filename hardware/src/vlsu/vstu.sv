@@ -227,6 +227,10 @@ module vstu import ara_pkg::*; import rvv_pkg::*; #(
 
       vrf_pnt_d = vrf_pnt_q + valid_bytes;
 
+`ifdef BYPASS_LD_ST
+      axi_w_o.data = 0;
+      axi_w_o.strb = 0; 
+`else
       // Copy data from the operands into the W channel
       for (int axi_byte = 0; axi_byte < AxiDataWidth/8; axi_byte++) begin
         // Is this byte a valid byte in the W beat?
@@ -248,6 +252,7 @@ module vstu import ara_pkg::*; import rvv_pkg::*; #(
           end
         end
       end
+`endif
 
       // Send the W beat
       axi_w_valid_o = 1'b1;
