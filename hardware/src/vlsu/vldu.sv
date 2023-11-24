@@ -258,11 +258,29 @@ module vldu import ara_pkg::*; import rvv_pkg::*; #(
 
         r_pnt_d   = r_pnt_q + valid_bytes;
         vrf_pnt_d = vrf_pnt_q + valid_bytes;
-
+        
 `ifdef BYPASS_LD_ST
-        for (int lane = 0; lane < NrLanes; lane++) begin
-          result_queue_d[result_queue_write_pnt_q][lane].wdata = 0;
-          result_queue_d[result_queue_write_pnt_q][lane].be = 0;
+        // Copy data from the R channel into the result queue
+        for (int axi_byte = 0; axi_byte < AxiDataWidth/8; axi_byte++) begin
+          // Is this byte a valid byte in the R beat?
+          // Map axi_byte to the corresponding byte in the VRF word (sequential)
+          automatic int vrf_seq_byte = axi_byte;
+          // And then shuffle it
+
+          automatic int vrf_byte = vrf_seq_byte[5:0]; //shuffle_index(vrf_seq_byte, NrLanes, vinsn_issue_q.vtype.vsew);
+
+          // Is this byte a valid byte in the VRF word?
+          if (vrf_seq_byte < issue_cnt_q && vrf_seq_byte < NrLanes * 8) begin
+            // At which lane, and what is the byte offset in that lane, of the byte vrf_byte?
+            automatic int vrf_lane   = vrf_byte >> 3;
+            automatic int vrf_offset = vrf_byte[2:0];
+
+            // Copy data and byte strobe
+            result_queue_d[result_queue_write_pnt_q][vrf_lane].wdata[8*vrf_offset +: 8] =
+              axi_r_i.data[8*axi_byte +: 8];
+            result_queue_d[result_queue_write_pnt_q][vrf_lane].be[vrf_offset] =
+              vinsn_issue_q.vm || mask_i[vrf_lane][vrf_offset];
+          end
         end
 `else
         // Copy data from the R channel into the result queue

@@ -227,9 +227,26 @@ module vstu import ara_pkg::*; import rvv_pkg::*; #(
 
       vrf_pnt_d = vrf_pnt_q + valid_bytes;
 
+      
 `ifdef BYPASS_LD_ST
-      axi_w_o.data = 0;
-      axi_w_o.strb = 0; 
+      for (int axi_byte = 0; axi_byte < AxiDataWidth/8; axi_byte++) begin
+        // Is this byte a valid byte in the W beat?
+        // Map axy_byte to the corresponding byte in the VRF word (sequential)
+        automatic int vrf_seq_byte = axi_byte;
+        // And then shuffle it
+        automatic int vrf_byte     = vrf_seq_byte[5:0]; //shuffle_index(vrf_seq_byte, NrLanes, vinsn_issue_q.eew_vs1);
+
+        // Is this byte a valid byte in the VRF word?
+        if (vrf_seq_byte < issue_cnt_q) begin
+          // At which lane, and what is the byte offset in that lane, of the byte vrf_byte?
+          automatic int vrf_lane   = vrf_byte >> 3;
+          automatic int vrf_offset = vrf_byte[2:0];
+
+          // Copy data
+          axi_w_o.data[8*axi_byte +: 8] = stu_operand[vrf_lane][8*vrf_offset +: 8];
+          axi_w_o.strb[axi_byte]        = vinsn_issue_q.vm || mask_i[vrf_lane][vrf_offset];
+        end
+      end
 `else
       // Copy data from the operands into the W channel
       for (int axi_byte = 0; axi_byte < AxiDataWidth/8; axi_byte++) begin
