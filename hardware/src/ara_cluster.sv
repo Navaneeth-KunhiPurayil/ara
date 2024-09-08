@@ -125,13 +125,9 @@ module ara_cluster import ara_pkg::*; import rvv_pkg::*;  #(
 
   // Remember that some of the macros are mirrored w.r.t. the Y axis
   // List of clusters (index) that do not need a ring axi cut on their right port
-  localparam int idx_no_ring_cut_left[MaxNrClusters/2]  = (NrClusters == 16 && NrLanes == 4 && modulate_ring_cuts) ? '{1, 3, 5, 7, 9, 11, 13, 15} :
-                                                       (NrClusters == 8  && NrLanes == 4 && modulate_ring_cuts) ? '{1, 3, 5, 7} :
-                                                       (NrClusters == 4  && NrLanes == 4 && modulate_ring_cuts) ? '{1, 3} : '{default: -1};
+  localparam int idx_no_ring_cut_left[8]  = modulate_ring_cuts ? '{1, 3, 5, 7, 9, 11, 13, 15} : '{default: -1};
   // List of clusters (index) that do not need a ring axi cut on their left port
-  localparam int idx_no_ring_cut_right[MaxNrClusters/2] = (NrClusters == 16 && NrLanes == 4 && modulate_ring_cuts) ? '{0, 2, 4, 6, 8, 10, 12, 14} :
-                                                       (NrClusters == 8  && NrLanes == 4 && modulate_ring_cuts) ? '{0, 2, 4, 6} :
-                                                       (NrClusters == 4  && NrLanes == 4 && modulate_ring_cuts) ? '{0, 2} : '{default: -1};
+  localparam int idx_no_ring_cut_right[8] = modulate_ring_cuts ? '{0, 2, 4, 6, 8, 10, 12, 14} : '{default: -1};
 
   for (genvar cluster=0; cluster < NrClusters; cluster++) begin : p_cluster
       ara_macro #(
