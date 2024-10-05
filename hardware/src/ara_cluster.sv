@@ -114,7 +114,7 @@ module ara_cluster import ara_pkg::*; import rvv_pkg::*;  #(
   localparam bit modulate_ring_cuts = 1;
 
   // Function to check if an index is in a [NrCluster/2]-wide list
-  function automatic bit is_index_in_list(int index, int list[NrClusters/2]);
+  function automatic bit is_index_in_list(int index, int list[8]);
     int found = 0;
     for (int i = 0; i < NrClusters/2; i++) begin
       if (list[i] == index) found = 1;
@@ -123,11 +123,8 @@ module ara_cluster import ara_pkg::*; import rvv_pkg::*;  #(
     return found;
   endfunction
 
-  // Remember that some of the macros are mirrored w.r.t. the Y axis
-  // List of clusters (index) that do not need a ring axi cut on their right port
-  localparam int idx_no_ring_cut_left[8]  = modulate_ring_cuts ? '{1, 3, 5, 7, 9, 11, 13, 15} : '{default: -1};
-  // List of clusters (index) that do not need a ring axi cut on their left port
-  localparam int idx_no_ring_cut_right[8] = modulate_ring_cuts ? '{0, 2, 4, 6, 8, 10, 12, 14} : '{default: -1};
+  localparam int idx_no_ring_cut_left[8] = '{1, 3, 5, 7, 9, 11, 13, 15};
+  localparam int idx_no_ring_cut_right[8] = '{0, 2, 4, 6, 8, 10, 12, 14};
 
   for (genvar cluster=0; cluster < NrClusters; cluster++) begin : p_cluster
       ara_macro #(
@@ -275,7 +272,7 @@ module ara_cluster import ara_pkg::*; import rvv_pkg::*;  #(
 
       for (genvar cluster=0; cluster < NrClusters; cluster++) begin
         // Check if this cluster needs a cut on the left
-        if (is_index_in_list(cluster, idx_no_ring_cut_left)) begin
+        if (is_index_in_list(cluster, idx_no_ring_cut_left) && (NrClusters==8 || NrClusters==16)) begin
           // Pass through
           assign ring_data_l_valid_cut[cluster] = ring_data_l_valid[cluster];
           assign ring_data_l_ready_cut[cluster == 0 ? NrClusters-1 : cluster - 1] = ring_data_l_ready[cluster == 0 ? NrClusters-1 : cluster - 1];
@@ -300,7 +297,7 @@ module ara_cluster import ara_pkg::*; import rvv_pkg::*;  #(
         end
 
         // Check if this cluster needs a cut on the right
-        if (is_index_in_list(cluster, idx_no_ring_cut_right)) begin
+        if (is_index_in_list(cluster, idx_no_ring_cut_right) && (NrClusters==8 || NrClusters==16)) begin
           // Pass through
           assign ring_data_r_valid_cut[cluster] = ring_data_r_valid[cluster];
           assign ring_data_r_ready[cluster == NrClusters-1 ? 0 : cluster + 1] = ring_data_r_ready_cut[cluster == NrClusters-1 ? 0 : cluster + 1];
